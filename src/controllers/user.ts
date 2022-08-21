@@ -6,6 +6,12 @@ import 'dotenv/config';
 
 const secret = String(process.env.SECRET);
 
+interface IReq extends Request {
+  payload?: {
+    admin: boolean;
+  };
+}
+
 const signIn = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
@@ -40,4 +46,29 @@ const signIn = async (req: Request, res: Response) => {
   }
 };
 
-export default { signIn };
+const save = async (req: IReq, res: Response) => {
+  const { name, email, password, confirmPassword } = req.body;
+  let { admin } = req.body;
+  if (password !== confirmPassword) return res.status(400).json({ errors: 'Confirmação de Senha inválida' });
+
+  if (!req.originalUrl.startsWith('/users')) admin = false;
+  if (!req.payload || !req.payload.admin) admin = false;
+
+  try {
+    const userExists = await User.findOne({ where: { email } });
+    if (userExists) return res.status(422).json({ errors: 'Um usuário já foi cadastrada com esse e-mail' });
+
+    const salt = await bcrypt.genSaltSync(12);
+    const passwordHash = await bcrypt.hashSync(password, salt);
+
+    const user = await User.create({ name, email, password: passwordHash, admin });
+
+    return res.status(201).json({
+      user: { id: user.id, name: user.name, email: user.email, admin: user.admin },
+    });
+  } catch (e) {
+    return res.status(500).json({ errors: 'Aconteceu um erro no servidor, tente novamente mais tarde!' });
+  }
+};
+
+export default { signIn, save };
