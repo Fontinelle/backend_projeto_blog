@@ -3,7 +3,7 @@ import app from '../../src/app';
 import db from '../../src/config/database';
 import User from '../../src/models/User';
 import bcrypt from 'bcrypt';
-import { adminMock, invalidUserToken, userMock2, userMock3 } from '../mocks';
+import { adminMock, invalidUserToken, userMock2, userMock3, userMock4 } from '../mocks';
 
 const request = supertest(app);
 
@@ -249,6 +249,120 @@ describe('User', () => {
           confirmPassword: userMock3.confirmPassword,
         })
         .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Um usuário já foi cadastrada com esse e-mail' });
+    });
+  });
+
+  describe('Signup', () => {
+    it('should not register user without passing all information', async () => {
+      const result = await request.post('/signup');
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({
+        errors: [
+          'O nome deve ter no mínimo 3 caracteres',
+          'Não é um email válido',
+          'A senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos',
+          'A confirmação de senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos',
+        ],
+      });
+    });
+
+    it('should not register unnamed user', async () => {
+      const result = await request.post('/signup').send({
+        email: userMock3.email,
+        password: userMock3.password,
+        confirmPassword: userMock3.confirmPassword,
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({ errors: ['O nome deve ter no mínimo 3 caracteres'] });
+    });
+
+    it('should not register user without email', async () => {
+      const result = await request.post('/signup').send({
+        name: userMock3.name,
+        password: userMock3.password,
+        confirmPassword: userMock3.confirmPassword,
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({ errors: ['Não é um email válido'] });
+    });
+
+    it('should not register user without password', async () => {
+      const result = await request.post('/signup').send({ name: userMock3.name, email: userMock3.email });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({
+        errors: [
+          'A senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos',
+          'A confirmação de senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos',
+        ],
+      });
+    });
+
+    it('should not register user without password confirmation', async () => {
+      const result = await request.post('/signup').send({ name: userMock3.name, email: userMock3.email, password: userMock3.password });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({
+        errors: ['A confirmação de senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos'],
+      });
+    });
+
+    it('should not register user if password confirmation is different from password', async () => {
+      const result = await request.post('/signup').send({
+        name: userMock3.name,
+        email: userMock3.email,
+        password: userMock3.password,
+        confirmPassword: 'Any#1&48',
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({
+        errors: 'Confirmação de Senha inválida',
+      });
+    });
+
+    it('should register user successfully', async () => {
+      const result = await request.post('/signup').send({
+        name: userMock4.name,
+        email: userMock4.email,
+        password: userMock4.password,
+        confirmPassword: userMock4.confirmPassword,
+        admin: userMock4.admin,
+      });
+
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toMatchObject({
+        user: {
+          id: 4,
+          name: 'any_user4',
+          email: 'any4@email.com',
+          admin: false,
+        },
+      });
+      expect(result.body).not.toHaveProperty('password');
+    });
+
+    it('should store encrypted password', async () => {
+      const email = userMock4.email;
+      const result = await User.findOne({ where: { email } });
+
+      expect(result?.password).not.toBeUndefined();
+      expect(result?.password).not.toBe(userMock4.password);
+    });
+
+    it('should not register user with e-mail already registered', async () => {
+      const result = await request.post('/signup').send({
+        name: userMock4.name,
+        email: userMock4.email,
+        password: userMock4.password,
+        confirmPassword: userMock4.confirmPassword,
+      });
 
       expect(result.statusCode).toBe(422);
       expect(result.body).toMatchObject({ errors: 'Um usuário já foi cadastrada com esse e-mail' });

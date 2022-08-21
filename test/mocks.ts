@@ -32,10 +32,17 @@ const userMock3 = {
   confirmPassword: 'Any#1&46',
   admin: true,
 };
+const userMock4 = {
+  name: 'any_user4',
+  email: 'any4@email.com',
+  password: 'Any#1&46',
+  confirmPassword: 'Any#1&46',
+  admin: true,
+};
 
 const id = 7;
 const email = 'any@email.com';
 
 const invalidUserToken = jwt.sign({ id, email }, secret, { expiresIn: process.env.TOKEN_EXPIRATION });
 
-export { adminMock, userMock2, userMock3, invalidUserToken };
+export { adminMock, userMock2, userMock3, userMock4, invalidUserToken };
