@@ -71,4 +71,28 @@ const save = async (req: IReq, res: Response) => {
   }
 };
 
-export default { signIn, save };
+const findAll = async (req: Request, res: Response) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'name', 'email', 'admin'],
+      where: { deleted: false },
+    });
+    return res.status(200).json({ users });
+  } catch (e) {
+    return res.status(500).json({ errors: 'Aconteceu um erro no servidor, tente novamente mais tarde!' });
+  }
+};
+
+const findOneById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findOne({ where: { id }, attributes: ['id', 'name', 'email', 'admin'] });
+    if (!user) return res.status(422).json({ errors: 'Usuário não encontrado' });
+
+    return res.status(200).json({ user });
+  } catch (e) {
+    return res.status(500).json({ errors: 'Aconteceu um erro no servidor, tente novamente mais tarde!' });
+  }
+};
+
+export default { signIn, save, findAll, findOneById };

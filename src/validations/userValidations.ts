@@ -23,4 +23,6 @@ const save = [
     .withMessage('A confirmação de senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos'),
 ];
 
-export default { save };
+const findOneById = [check('id').isNumeric().withMessage('Não é um ID válido')];
+
+export default { save, findOneById };
