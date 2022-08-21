@@ -8,6 +8,7 @@ import validation from '../middleware/validation';
 const router = Router();
 
 router.post('/signin', user.signIn);
+router.post('/signup', userValidations.save, validation, user.save);
 router.post('/users', authenticate, admin, userValidations.save, validation, user.save);
 
 export default router;
