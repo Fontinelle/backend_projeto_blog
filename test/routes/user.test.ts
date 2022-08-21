@@ -368,4 +368,143 @@ describe('User', () => {
       expect(result.body).toMatchObject({ errors: 'Um usuário já foi cadastrada com esse e-mail' });
     });
   });
+
+  describe('FindAll', () => {
+    it('should require login with token', async () => {
+      const result = await request.get('/users');
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['É necessário fazer login'] });
+    });
+
+    it('should have a valid token', async () => {
+      const result = await request.get('/users').set({
+        authorization: `bearer invalid.Token`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Token expirado ou inválido'] });
+    });
+
+    it('should have a valid user token', async () => {
+      const result = await request.get('/users').set({
+        authorization: `bearer ${invalidUserToken}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário inválido'] });
+    });
+
+    it('should not allow non-admin user', async () => {
+      const result = await request.get('/users').set({
+        authorization: `bearer ${userMock2.token}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário não é administrador'] });
+    });
+
+    it('should return all user', async () => {
+      const result = await request.get('/users').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body.users).toHaveLength(4);
+      expect(result.body).toMatchObject({
+        users: [
+          {
+            admin: true,
+            email: 'any1@email.com',
+            id: 1,
+            name: 'any_user1',
+          },
+          {
+            admin: false,
+            email: 'any2@email.com',
+            id: 2,
+            name: 'any_user2',
+          },
+          {
+            admin: true,
+            email: 'any3@email.com',
+            id: 3,
+            name: 'any_user3',
+          },
+          {
+            admin: false,
+            email: 'any4@email.com',
+            id: 4,
+            name: 'any_user4',
+          },
+        ],
+      });
+    });
+  });
+
+  describe('FindOneById', () => {
+    it('should require login with token', async () => {
+      const result = await request.get('/users/3');
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['É necessário fazer login'] });
+    });
+
+    it('should have a valid token', async () => {
+      const result = await request.get('/users/3').set({
+        authorization: `bearer invalid.Token`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Token expirado ou inválido'] });
+    });
+
+    it('should have a valid user token', async () => {
+      const result = await request.get('/users/3').set({
+        authorization: `bearer ${invalidUserToken}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário inválido'] });
+    });
+
+    it('should not allow non-admin user', async () => {
+      const result = await request.get('/users/3').set({
+        authorization: `bearer ${userMock2.token}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário não é administrador'] });
+    });
+
+    it('should return status 422 if no user found', async () => {
+      const result = await request.get('/users/5').set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Usuário não encontrado' });
+    });
+
+    it('should return status 400 if ID is invalid', async () => {
+      const result = await request.get('/users/idInvalid').set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({ errors: ['Não é um ID válido'] });
+    });
+
+    it('should return one user', async () => {
+      const result = await request.get('/users/3').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toMatchObject({
+        user: {
+          admin: true,
+          email: 'any3@email.com',
+          id: 3,
+          name: 'any_user3',
+        },
+      });
+    });
+  });
 });
