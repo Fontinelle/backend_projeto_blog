@@ -1,5 +1,6 @@
 import app from './app';
 import db from './config/database';
+import './models';
 
 const port = process.env.PORT || 3001;
 
