@@ -1,0 +1,37 @@
+{
+  "name": "backend-projeto-blog",
+  "version": "1.0.0",
+  "description": "API REST em Node.JS",
+  "main": "server.ts",
+  "scripts": {
+    "test": "jest --detectOpenHandles --watchAll --verbose=false",
+    "prebuild": "eslint src/** test/** --fix",
+    "build": "tsc",
+    "lint": "eslint src/** test/** --fix",
+    "dev": "ts-node-dev --inspect --transpile-only --ignore-watch node_modules src/server.ts",
+    "start": "node ./dist/server.js"
+  },
+  "author": "Epitácio Fontinelle",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "helmet": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/jest": "^28.1.7",
+    "@types/supertest": "^2.0.12",
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "eslint": "^8.22.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "supertest": "^6.2.4",
+    "ts-jest": "^28.0.8",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.7.4"
+  }
+}
