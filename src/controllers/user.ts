@@ -95,4 +95,33 @@ const findOneById = async (req: Request, res: Response) => {
   }
 };
 
-export default { signIn, save, findAll, findOneById };
+const update = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, email, admin, password, confirmPassword } = req.body;
+
+  if (password !== confirmPassword) return res.status(400).json({ errors: 'Confirmação de Senha inválida' });
+
+  try {
+    const userExists = await User.findOne({
+      where: { id },
+      attributes: ['id', 'name', 'email', 'admin'],
+    });
+    if (!userExists) return res.status(422).json({ errors: 'Usuário não encontrado' });
+
+    if (userExists.email === email) return res.status(422).json({ errors: 'Um usuário já foi cadastrada com esse e-mail' });
+
+    let passwordHash;
+    if (password) {
+      const salt = await bcrypt.genSaltSync(12);
+      passwordHash = await bcrypt.hashSync(password, salt);
+    }
+
+    const user = await userExists.update({ name, email, admin, password: passwordHash });
+
+    return res.status(201).json({ user });
+  } catch (e) {
+    return res.status(500).json({ errors: 'Aconteceu um erro no servidor, tente novamente mais tarde!' });
+  }
+};
+
+export default { signIn, save, findAll, findOneById, update };

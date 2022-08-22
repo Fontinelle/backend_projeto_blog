@@ -14,4 +14,6 @@ router.post('/users', authenticate, admin, userValidations.save, validation, use
 router.get('/users', authenticate, admin, user.findAll);
 router.get('/users/:id', authenticate, admin, userValidations.findOneById, validation, user.findOneById);
 
+router.put('/users/:id', authenticate, admin, userValidations.update, validation, user.update);
+
 export default router;
