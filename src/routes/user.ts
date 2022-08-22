@@ -16,4 +16,6 @@ router.get('/users/:id', authenticate, admin, userValidations.findOneById, valid
 
 router.put('/users/:id', authenticate, admin, userValidations.update, validation, user.update);
 
+router.delete('/users/:id', authenticate, admin, userValidations.remove, validation, user.remove);
+
 export default router;

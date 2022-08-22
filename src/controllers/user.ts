@@ -124,4 +124,22 @@ const update = async (req: Request, res: Response) => {
   }
 };
 
-export default { signIn, save, findAll, findOneById, update };
+const remove = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const userExists = await User.findOne({
+      where: { id, deleted: false },
+      attributes: ['id', 'deleted'],
+    });
+
+    if (!userExists) return res.status(422).json({ errors: 'Usuário não encontrado' });
+    const { deleted } = await userExists.update({ deleted: true });
+
+    return res.status(200).json({ deleted });
+  } catch (e) {
+    return res.status(500).json({ errors: 'Aconteceu um erro no servidor, tente novamente mais tarde!' + e });
+  }
+};
+
+export default { signIn, save, findAll, findOneById, update, remove };

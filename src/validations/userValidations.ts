@@ -26,4 +26,7 @@ const update = [
     .isStrongPassword({ minLength: 8, minUppercase: 1, minLowercase: 1, minNumbers: 1, minSymbols: 1 })
     .withMessage('A confirmação de senha deve ter uma combinação de 8 caracteres com pelo menos 1 números, letras, sinais de pontuação e símbolos'),
 ];
-export default { save, findOneById, update };
+
+const remove = [check('id').isNumeric().withMessage('Não é um ID válido')];
+
+export default { save, findOneById, update, remove };
