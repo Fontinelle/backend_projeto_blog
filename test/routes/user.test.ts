@@ -660,4 +660,78 @@ describe('User', () => {
       expect(user?.password).not.toBe('Any#1&48');
     });
   });
+
+  describe('Remove', () => {
+    it('should require login with token', async () => {
+      const result = await request.delete('/users/3');
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['É necessário fazer login'] });
+    });
+
+    it('should have a valid token', async () => {
+      const result = await request.delete('/users/3').set({
+        authorization: `bearer invalid.Token`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Token expirado ou inválido'] });
+    });
+
+    it('should have a valid user token', async () => {
+      const result = await request.delete('/users/3').set({
+        authorization: `bearer ${invalidUserToken}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário inválido'] });
+    });
+
+    it('should not allow non-admin user', async () => {
+      const result = await request.delete('/users/3').set({
+        authorization: `bearer ${userMock2.token}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário não é administrador'] });
+    });
+
+    it('should return status 422 if no user found', async () => {
+      const result = await request.delete('/users/7').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Usuário não encontrado' });
+    });
+
+    it('should return status 400 if ID is invalid', async () => {
+      const result = await request.delete('/users/idInvalid').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({ errors: ['Não é um ID válido'] });
+    });
+
+    it('should successfully remove user', async () => {
+      const result = await request.delete('/users/3').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+      const user = await User.findByPk(3);
+
+      expect(user?.deleted).toBe(true);
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toMatchObject({ deleted: true });
+    });
+
+    it('should return status 422 if user has already been removed', async () => {
+      const result = await request.delete('/users/3').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Usuário não encontrado' });
+    });
+  });
 });
