@@ -507,4 +507,157 @@ describe('User', () => {
       });
     });
   });
+
+  describe('Update', () => {
+    it('should require login with token', async () => {
+      const result = await request.put('/users/3');
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['É necessário fazer login'] });
+    });
+
+    it('should have a valid token', async () => {
+      const result = await request.put('/users/3').set({
+        authorization: `bearer invalid.Token`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Token expirado ou inválido'] });
+    });
+
+    it('should have a valid user token', async () => {
+      const result = await request.put('/users/3').set({
+        authorization: `bearer ${invalidUserToken}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário inválido'] });
+    });
+
+    it('should not allow non-admin user', async () => {
+      const result = await request.put('/users/3').set({
+        authorization: `bearer ${userMock2.token}`,
+      });
+
+      expect(result.statusCode).toBe(401);
+      expect(result.body).toMatchObject({ errors: ['Usuário não é administrador'] });
+    });
+
+    it('should return status 422 if no user found', async () => {
+      const result = await request.put('/users/7').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Usuário não encontrado' });
+    });
+
+    it('should return status 400 if ID is invalid', async () => {
+      const result = await request.put('/users/idInvalid').set({
+        authorization: `bearer ${adminMock.token}`,
+      });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({ errors: ['Não é um ID válido'] });
+    });
+
+    it('should update username', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ name: 'name_update' })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toMatchObject({
+        user: {
+          name: 'name_update',
+          email: userMock3.email,
+          admin: true,
+          id: 3,
+        },
+      });
+      expect(result.body).not.toHaveProperty('password');
+    });
+
+    it('should not update user with e-mail already registered', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ email: userMock3.email })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(422);
+      expect(result.body).toMatchObject({ errors: 'Um usuário já foi cadastrada com esse e-mail' });
+    });
+
+    it('should update user email', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ email: 'update@email.com' })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toMatchObject({
+        user: {
+          name: 'name_update',
+          email: 'update@email.com',
+          admin: true,
+          id: 3,
+        },
+      });
+      expect(result.body).not.toHaveProperty('password');
+    });
+
+    it('should update user admin status', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ admin: false })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toMatchObject({
+        user: {
+          name: 'name_update',
+          email: 'update@email.com',
+          admin: false,
+          id: 3,
+        },
+      });
+      expect(result.body).not.toHaveProperty('password');
+    });
+
+    it('should not update user if password confirmation is different from password', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ password: 'Any#1&48' })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      expect(result.statusCode).toBe(400);
+      expect(result.body).toMatchObject({
+        errors: 'Confirmação de Senha inválida',
+      });
+    });
+
+    it('should update user if password and password confirmation provided', async () => {
+      const result = await request
+        .put('/users/3')
+        .send({ password: 'Any#1&48', confirmPassword: 'Any#1&48' })
+        .set({ authorization: `bearer ${adminMock.token}` });
+
+      const email = 'update@email.com';
+      const user = await User.findOne({ where: { email } });
+
+      expect(result.statusCode).toBe(201);
+      expect(result.body).toMatchObject({
+        user: {
+          name: 'name_update',
+          email: 'update@email.com',
+          admin: false,
+          id: 3,
+        },
+      });
+      expect(result.body).not.toHaveProperty('password');
+      expect(user?.password).not.toBeUndefined();
+      expect(user?.password).not.toBe('Any#1&48');
+    });
+  });
 });
